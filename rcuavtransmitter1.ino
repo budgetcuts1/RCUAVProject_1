@@ -4,7 +4,7 @@ HardwareSerial LoRa(1);
 #define TX_PIN 25
 #define RX_PIN 26
 
-struct ServoValues {
+struct __attribute__((packed)) ServoValues {
   uint8_t throttle;
   uint8_t A_ang;
   uint8_t elev_ang;
@@ -38,38 +38,16 @@ void setup() {
 void loop() {
   unsigned long currentMillis = millis();
 
-  if (Serial.available()) {
-    String data = Serial.readStringUntil('\n');
-    int firstComma = data.indexOf(',');
-    int secondComma = data.indexOf(',', firstComma + 1);
-    int thirdComma = data.indexOf(',', secondComma + 1);
-    int fourthComma = data.indexOf(',', thirdComma + 1);
-    int fifthComma = data.indexOf(',', fourthComma + 1);
-    int sixthComma = data.indexOf(',', fifthComma + 1);
-
-    if (firstComma > 0 && secondComma > firstComma && thirdComma > secondComma && fourthComma > thirdComma && fifthComma > fourthComma && sixthComma > fifthComma) {
-      int throttle = data.substring(0, firstComma).toInt();
-      int A_ang = data.substring(firstComma + 1, secondComma).toInt();
-      int elev_ang = data.substring(secondComma + 1, thirdComma).toInt();
-      int rud_ang = data.substring(thirdComma + 1, fourthComma).toInt();
-      int fpvH_ang = data.substring(fourthComma + 1, fifthComma).toInt();
-      int fpvV_ang = data.substring(fifthComma + 1, sixthComma).toInt();
-      int thr_arm = data.substring(sixthComma + 1).toInt();
-
-      throttle = constrain(throttle, 0, 180);
-      A_ang = constrain(A_ang, 0, 180);
-      elev_ang = constrain(elev_ang, 0, 180);
-      rud_ang = constrain(rud_ang, 0, 180);
-      fpvH_ang = constrain(fpvH_ang, 0, 180);
-      fpvV_ang = constrain(fpvV_ang, 0, 180);
-
-      servoVals.throttle = throttle;
-      servoVals.A_ang = A_ang;
-      servoVals.elev_ang = elev_ang;
-      servoVals.rud_ang = rud_ang;
-      servoVals.fpvH_ang = fpvH_ang;
-      servoVals.fpvV_ang = fpvV_ang;
-      servoVals.thr_arm = thr_arm;
+  if (Serial.available() >= (int)sizeof(ServoValues)) {
+    size_t recieve = Serial.readBytes((char*)&servoVals, sizeof(ServoValues));
+    if(recieve == sizeof(ServoValues)) {
+      int throttle = constrain(servoVals.throttle, 0, 180);
+      int A_ang = constrain(servoVals.A_ang, 0, 180);
+      int elev_ang = constrain(servoVals.elev_ang, 0, 180);
+      int rud_ang = constrain(servoVals.rud_ang, 0, 180);
+      int fpvH_ang = constrain(servoVals.fpvH_ang, 0, 180);
+      int fpvV_ang = constrain(servoVals.fpvV_ang, 0, 180);
+      int thr_arm = servoVals.thr_arm;
     }
 
   if (currentMillis - lastServoSend >= servoInterval) {
